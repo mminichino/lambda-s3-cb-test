@@ -7,6 +7,7 @@ const password = process.env.COUCHBASE_PASSWORD;
 const bucketName = process.env.COUCHBASE_BUCKET;
 const scopeName = process.env.COUCHBASE_SCOPE;
 const collectionName = process.env.COUCHBASE_COLLECTION;
+const batchSize = 100;
 
 exports.handler = async (event, context) => {
     const s3bucketName = event.Records[0].s3.bucket.name;
@@ -29,11 +30,17 @@ exports.handler = async (event, context) => {
         const response = await client.send(command);
         const body = await response.Body.transformToString();
         const json = JSON.parse(body);
-        var index = 1;
-        for (const element of json) {
-            docId = `${collectionName}::${index++}`;
-            await collection.upsert(docId, element);
-        }
+        console.log('Loaded ', json.length, ' documents');
+        const processBatch = async (data, size) => {
+            for (let i = 0; i < data.length; i += size) {
+                const batch = data.slice(i, i + size);
+                const promises = batch.map(doc => collection.upsert(doc.id, doc));
+                await Promise.all(promises);
+            }
+        };
+        await processBatch(json, batchSize)
+            .then(() => console.log('Documents loaded'))
+            .catch(err => console.error('Error:', err));
     } catch (err) {
         console.log(err);
         throw err;
