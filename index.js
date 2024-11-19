@@ -30,7 +30,7 @@ exports.handler = async (event, context) => {
         const response = await client.send(command);
         const body = await response.Body.transformToString();
         const json = JSON.parse(body);
-        console.log('Loaded ', json.length, ' documents');
+        console.log('Loaded', json.length, 'documents');
         const processBatch = async (data, size) => {
             for (let i = 0; i < data.length; i += size) {
                 const batch = data.slice(i, i + size);
@@ -39,7 +39,7 @@ exports.handler = async (event, context) => {
             }
         };
         await processBatch(json, batchSize)
-            .then(() => console.log('Documents loaded'))
+            .then(() => console.log('Documents successfully loaded'))
             .catch(err => console.error('Error:', err));
     } catch (err) {
         console.log(err);
